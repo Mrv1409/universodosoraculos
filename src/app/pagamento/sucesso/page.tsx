@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthState } from '@/hooks/useAuthState';
 import { formatarTempo } from '@/lib/utils';
+import { Suspense } from 'react';
+
 
 export default function SucessoPagamento() {
   const { userData } = useAuthState();
@@ -34,7 +36,7 @@ export default function SucessoPagamento() {
 
   if (verificandoPagamento) {
     return (
-      <>
+      <Suspense fallback={<div>Carregando...</div>}>
         {/* Background */}
         <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-violet-900 -z-10">
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-purple-900/30 to-transparent"></div>
@@ -57,7 +59,7 @@ export default function SucessoPagamento() {
             </div>
           </div>
         </div>
-      </>
+      </Suspense>
     );
   }
 
