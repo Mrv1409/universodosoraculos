@@ -8,8 +8,8 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { formatarTempo } from '@/lib/utils';
 import { Suspense } from 'react';
 
-
-export default function SucessoPagamento() {
+// Componente que usa useSearchParams - deve estar dentro de Suspense
+function SucessoPagamentoContent() {
   const { userData } = useAuthState();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function SucessoPagamento() {
 
   if (verificandoPagamento) {
     return (
-      <Suspense fallback={<div>Carregando...</div>}>
+      <>
         {/* Background */}
         <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-violet-900 -z-10">
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-purple-900/30 to-transparent"></div>
@@ -59,7 +59,7 @@ export default function SucessoPagamento() {
             </div>
           </div>
         </div>
-      </Suspense>
+      </>
     );
   }
 
@@ -176,5 +176,21 @@ export default function SucessoPagamento() {
         </div>
       </div>
     </>
+  );
+}
+
+// Componente principal que envolve com Suspense
+export default function SucessoPagamento() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-400 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-purple-200">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <SucessoPagamentoContent />
+    </Suspense>
   );
 }
