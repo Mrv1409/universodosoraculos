@@ -1,19 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Usuario } from '@/types';
 import { 
-  gerarLinkWhatsApp, 
-  validarCreditos, 
-  temposConsulta, 
-  temasConsulta,
-  profissionaisWhatsApp,
-  SolicitacaoConsulta 
-} from '@/lib/whatsapp';
-import { formatarTempo } from '@/lib/utils';
-import { doc, updateDoc, increment, setDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+  formatarTempo, 
+  formatarReal, 
+  calcularValorConsulta, 
+  validarTempoConsulta,
+  TEMPO_MINIMO_CONSULTA,
+  VALOR_POR_MINUTO 
+} from '@/lib/utils';
+import { getPlanosEspecificos, getPlanosGerais, getPacotePorId } from '@/data/pacotes-creditos';
 
 interface ConsultaModalProps {
   isOpen: boolean;
@@ -23,6 +21,32 @@ interface ConsultaModalProps {
   onSucesso?: () => void;
 }
 
+// Tempos para consultas gerais
+const temposConsultaGeral = [
+  { valor: 20, label: '20min', popular: true, valorReal: 52.00 },
+  { valor: 30, label: '30min', popular: false, valorReal: 78.00 },
+  { valor: 45, label: '45min', popular: false, valorReal: 117.00 },
+  { valor: 60, label: '60min', popular: false, valorReal: 156.00 }
+];
+
+// Temas disponíveis para consulta
+const temasConsulta = [
+  { id: 'amor', nome: 'Amor e Relacionamentos', icone: '💕' },
+  { id: 'carreira', nome: 'Carreira e Projetos', icone: '💼' },
+  { id: 'espiritualidade', nome: 'Espiritualidade e Karmas', icone: '🔮' },
+  { id: 'dinheiro', nome: 'Dinheiro e Prosperidade', icone: '💰' },
+  { id: 'vida', nome: 'Vida Pessoal', icone: '🌟' },
+  { id: 'geral', nome: 'Consulta Geral', icone: '✨' }
+];
+
+// Dados dos profissionais
+const profissionais = [
+  { id: 'aurora', nome: 'Cigana Aurora', especialidade: 'Tarot Cigano', icone: '💕', online: true },
+  { id: 'mary', nome: 'Cigana Mary', especialidade: 'Baralho Cigano', icone: '🚀', online: true },
+  { id: 'jade', nome: 'Cigana Jade', especialidade: 'Cristalomancia', icone: '🌙', online: true },
+  { id: 'mel', nome: 'Cigana Mel', especialidade: 'Numerologia', icone: '✨', online: true }
+];
+
 export default function ConsultaModal({ 
   isOpen, 
   onClose, 
@@ -31,41 +55,40 @@ export default function ConsultaModal({
   onSucesso 
 }: ConsultaModalProps) {
   const router = useRouter();
-  const [etapa, setEtapa] = useState<'profissional' | 'detalhes' | 'confirmacao' | 'sem-creditos'>('profissional');
+  const [etapa, setEtapa] = useState<'tipo' | 'profissional' | 'detalhes' | 'confirmacao' | 'sem-creditos'>('tipo');
+  const [tipoConsulta, setTipoConsulta] = useState<'especifico' | 'geral' | null>(null);
+  const [planoEspecificoId, setPlanoEspecificoId] = useState('');
   const [profissionalSelecionado, setProfissionalSelecionado] = useState(profissionalPreSelecionado || '');
-  const [tempoSelecionado, setTempoSelecionado] = useState(30);
+  const [tempoSelecionado, setTempoSelecionado] = useState(20);
   const [temaSelecionado, setTemaSelecionado] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [processando, setProcessando] = useState(false);
 
-  if (!isOpen) return null;
-
   const creditosDisponiveis = usuario.creditos || 0;
+  const validacao = validarTempoConsulta(tempoSelecionado, creditosDisponiveis);
+  const valorConsulta = calcularValorConsulta(tempoSelecionado);
   
-  //eslint-disable-next-line
-  const determinarEtapaInicial = () => {
-    if (creditosDisponiveis === 0) {
-      return 'sem-creditos';
-    }
-    return 'profissional';
-  };
+  const planosEspecificos = getPlanosEspecificos();//eslint-disable-next-line
+  const planosGerais = getPlanosGerais();
+  const planoSelecionado = planoEspecificoId ? getPacotePorId(planoEspecificoId) : null;
 
   // Inicializar etapa baseada nos créditos
-  if (etapa === 'profissional' && creditosDisponiveis === 0) {
-    setEtapa('sem-creditos');
-  }
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    if (creditosDisponiveis < TEMPO_MINIMO_CONSULTA) {
+      setEtapa('sem-creditos');
+    } else {
+      setEtapa('tipo');
+    }
+  }, [isOpen, creditosDisponiveis]);
 
-  const validacao = validarCreditos(creditosDisponiveis, tempoSelecionado);
-
-  const profissionais = [
-    { id: 'prof1', nome: 'Marina Celestial', especialidade: 'Amor e Relacionamentos', icone: '💕', online: true },
-    { id: 'prof2', nome: 'Gabriel Místico', especialidade: 'Carreira e Projetos', icone: '🚀', online: true },
-    { id: 'prof3', nome: 'Luna Esotérica', especialidade: 'Espiritualidade e Karmas', icone: '🌙', online: true },
-    { id: 'prof4', nome: 'Ricardo Vidente', especialidade: 'Consultas Gerais', icone: '✨', online: true }
-  ];
+  if (!isOpen) return null;
 
   const handleContinuar = () => {
-    if (etapa === 'profissional' && profissionalSelecionado) {
+    if (etapa === 'tipo' && tipoConsulta) {
+      setEtapa('profissional');
+    } else if (etapa === 'profissional' && profissionalSelecionado) {
       setEtapa('detalhes');
     } else if (etapa === 'detalhes') {
       setEtapa('confirmacao');
@@ -77,6 +100,10 @@ export default function ConsultaModal({
       setEtapa('profissional');
     } else if (etapa === 'confirmacao') {
       setEtapa('detalhes');
+    } else if (etapa === 'profissional') {
+      setEtapa('tipo');
+    } else if (etapa === 'sem-creditos') {
+      setEtapa('tipo');
     }
   };
 
@@ -85,71 +112,94 @@ export default function ConsultaModal({
     onClose();
   };
 
-  const handleAjustarTempo = () => {
-    // Ajustar para o tempo máximo de créditos disponíveis
-    const tempoMaximo = Math.min(creditosDisponiveis, 60); // Max 60 minutos
-    setTempoSelecionado(tempoMaximo);
-    
-    // Se ainda não for suficiente, mostrar opções menores
-    if (tempoMaximo < 15) {
-      setTempoSelecionado(creditosDisponiveis);
-    }
-  };
-
   const handleSolicitarConsulta = async () => {
-    if (!validacao.suficiente) {
-      alert('Créditos insuficientes!');
+    // Validar se é consulta geral
+    if (tipoConsulta === 'geral' && !validacao.valido) {
+      alert(validacao.mensagem);
+      return;
+    }
+
+    // Validar se é consulta específica
+    if (tipoConsulta === 'especifico' && !planoEspecificoId) {
+      alert('Selecione um plano específico.');
       return;
     }
 
     setProcessando(true);
 
-    try {
-      const solicitacao: SolicitacaoConsulta = {
+    try {//eslint-disable-next-line
+      const requestBody: any = {
+        userId: usuario.uid,
         profissionalId: profissionalSelecionado,
-        tempoSolicitado: tempoSelecionado,
         tema: temaSelecionado || undefined,
         observacoes: observacoes || undefined
       };
 
-      // Gerar link do WhatsApp
-      const linkWhatsApp = gerarLinkWhatsApp({
-        usuario,
-        solicitacao
+      // Adicionar dados específicos conforme o tipo
+      if (tipoConsulta === 'especifico') {
+        requestBody.planId = planoEspecificoId;
+      } else {
+        requestBody.tempoSolicitado = tempoSelecionado;
+      }
+
+      const response = await fetch('/api/solicitar-consulta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       });
 
-      // Registrar consulta no Firebase
-      const consultaRef = doc(collection(db, 'consultas-solicitadas'));
-      await setDoc(consultaRef, {
-        userId: usuario.uid,
-        profissionalId: profissionalSelecionado,
-        tempoSolicitado: tempoSelecionado,
-        tema: temaSelecionado || null,
-        observacoes: observacoes || null,
-        status: 'pendente',
-        criadoEm: new Date(),
-        linkWhatsApp
-      });
+      const data = await response.json();
 
-      // Debitar créditos do usuário
-      const userRef = doc(db, 'usuarios', usuario.uid);
-      await updateDoc(userRef, {
-        creditos: increment(-tempoSelecionado),
-        atualizadoEm: new Date()
-      });
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Erro ao solicitar consulta');
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erro no agendamento');
+      }
 
       // Abrir WhatsApp
-      window.open(linkWhatsApp, '_blank');
+      if (data.data?.linkWhatsapp) {
+        const linkWhatsapp = data.data.linkWhatsapp;
+        
+        const whatsappWindow = window.open(linkWhatsapp, '_blank');
+        
+        if (!whatsappWindow || whatsappWindow.closed) {
+          setTimeout(() => {
+            window.location.href = linkWhatsapp;
+          }, 1000);
+        }
+        
+        setTimeout(() => {
+          if (confirm(
+            '📱 CONSULTA AGENDADA!\n\n' +
+            'Se o WhatsApp não abriu automaticamente, clique OK para abrir manualmente.\n\n' +
+            'Código: ' + data.data.codigoAtendimento
+          )) {
+            window.location.href = linkWhatsapp;
+          }
+        }, 2000);
+      }
 
-      // Fechar modal e notificar sucesso
       onClose();
       if (onSucesso) onSucesso();
-
-      alert('Consulta solicitada com sucesso! Você foi redirecionado para o WhatsApp do profissional.');
-
-    } catch (error) {
-      console.error('Erro ao solicitar consulta:', error);
-      alert('Erro ao solicitar consulta. Tente novamente.');
+    // eslint-disable-next-line
+    } catch (error: any) {
+      console.error('🚨 Erro ao solicitar consulta:', error);
+      
+      let mensagemErro = 'Erro inesperado ao solicitar consulta';
+      
+      if (error.message.includes('Créditos insuficientes')) {
+        mensagemErro = `❌ CRÉDITOS INSUFICIENTES\n\nVocê precisa de ${tempoSelecionado} minutos\nDisponível: ${creditosDisponiveis} minutos`;
+      } else if (error.message.includes('Usuário não encontrado')) {
+        mensagemErro = '❌ ERRO DE AUTENTICAÇÃO\n\nFaça login novamente para continuar';
+      } else if (error.message.includes('Dados incompletos')) {
+        mensagemErro = '❌ DADOS INCOMPLETOS\n\nVerifique se todos os campos estão preenchidos';
+      } else {
+        mensagemErro = `❌ ERRO NO SISTEMA\n\n${error.message}`;
+      }
+      
+      alert(mensagemErro);
     } finally {
       setProcessando(false);
     }
@@ -173,14 +223,14 @@ export default function ConsultaModal({
             </button>
           </div>
           
-          {/* Progress Bar - Só mostra se não for sem-creditos */}
+          {/* Progress Bar */}
           {etapa !== 'sem-creditos' && (
             <div className="mt-4 flex items-center space-x-2">
-              {['profissional', 'detalhes', 'confirmacao'].map((step, index) => (
+              {['tipo', 'profissional', 'detalhes', 'confirmacao'].map((step, index) => (
                 <div key={step} className="flex-1 h-2 rounded-full bg-gray-700">
                   <div 
                     className={`h-full rounded-full transition-all duration-300 ${
-                      ['profissional', 'detalhes', 'confirmacao'].indexOf(etapa) >= index 
+                      ['tipo', 'profissional', 'detalhes', 'confirmacao'].indexOf(etapa) >= index 
                         ? 'bg-gradient-to-r from-purple-500 to-indigo-500' 
                         : 'bg-gray-700'
                     }`}
@@ -194,62 +244,117 @@ export default function ConsultaModal({
         {/* Content */}
         <div className="p-6">
           
-          {/* CENÁRIO 1: SEM CRÉDITOS */}
+          {/* SEM CRÉDITOS */}
           {etapa === 'sem-creditos' && (
             <div className="text-center">
               <div className="text-8xl mb-6">💸</div>
-              
+        
               <h3 className="text-2xl font-bold text-white mb-4">
-                Você não possui créditos
+                Créditos Insuficientes
               </h3>
-              
+        
               <p className="text-purple-200 text-lg mb-8">
-                Para solicitar uma consulta com nossos especialistas, você precisa adquirir créditos.
+                Para consultas gerais, você precisa de pelo menos {TEMPO_MINIMO_CONSULTA} minutos de crédito.
               </p>
 
-              <div className="bg-red-900/20 rounded-2xl p-6 border border-red-500/30 mb-8">
+              <div className="bg-blue-900/20 rounded-2xl p-6 border border-blue-500/30 mb-8">
                 <div className="flex items-center justify-center mb-4">
-                  <span className="text-4xl mr-3">⚠️</span>
-                  <span className="text-red-300 font-semibold">Créditos Insuficientes</span>
+                  <span className="text-4xl mr-3">💡</span>
+                  <span className="text-blue-300 font-semibold">Você ainda pode escolher um plano específico!</span>
                 </div>
-                <p className="text-red-200">
-                  Saldo atual: <span className="font-bold">{formatarTempo(creditosDisponiveis)}</span>
-                </p>
-                <p className="text-red-200 text-sm mt-2">
-                  Consulta mínima: 15 minutos
+                <p className="text-blue-200 text-sm">
+                  Os planos específicos têm tempo ilimitado e não usam seus créditos.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30">
-                  <div className="text-3xl mb-2">⚡</div>
-                  <h4 className="font-bold text-white mb-2">Consulta Rápida</h4>
-                  <p className="text-purple-300 text-sm mb-3">15-30 minutos</p>
-                  <p className="text-yellow-400 font-bold">A partir de R$ 29,90</p>
-                </div>
-                
-                <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30">
+                <button
+                  onClick={() => setEtapa('tipo')}
+                  className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30 hover:border-purple-400/50 transition-colors"
+                >
                   <div className="text-3xl mb-2">🔮</div>
-                  <h4 className="font-bold text-white mb-2">Consulta Completa</h4>
-                  <p className="text-purple-300 text-sm mb-3">30-60 minutos</p>
-                  <p className="text-yellow-400 font-bold">A partir de R$ 49,90</p>
-                </div>
+                  <h4 className="font-bold text-white mb-2">Ver Planos Específicos</h4>
+                  <p className="text-purple-300 text-sm">Tempo ilimitado</p>
+                </button>
+                
+                <button
+                  onClick={handleComprarCreditos}
+                  className="bg-yellow-900/20 rounded-xl p-4 border border-yellow-500/30 hover:border-yellow-400/50 transition-colors"
+                >
+                  <div className="text-3xl mb-2">💳</div>
+                  <h4 className="font-bold text-white mb-2">Comprar Créditos</h4>
+                  <p className="text-yellow-300 text-sm">Para consultas gerais</p>
+                </button>
               </div>
-
-              <button
-                onClick={handleComprarCreditos}
-                className="w-full py-4 px-6 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-lg rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg mb-4"
-              >
-                💳 Comprar Créditos Agora
-              </button>
-
-              <p className="text-purple-400 text-sm">
-                Pagamento seguro via cartão ou PIX
-              </p>
             </div>
           )}
 
-          {/* CENÁRIO 2 E 3: TEM ALGUNS CRÉDITOS - Fluxo normal mas com validação */}
+          {/* ESCOLHER TIPO DE CONSULTA */}
+          {etapa === 'tipo' && (
+            <div>
+              <h3 className="text-xl font-bold text-white mb-6">
+                Escolha o tipo de consulta
+              </h3>
+              
+              <div className="space-y-4 mb-6">
+                {/* Planos Específicos */}
+                <button
+                  onClick={() => setTipoConsulta('especifico')}
+                  className={`w-full p-6 rounded-2xl border-2 transition-all duration-300 text-left ${
+                    tipoConsulta === 'especifico'
+                      ? 'border-purple-400 bg-purple-900/30'
+                      : 'border-purple-500/30 bg-purple-900/10 hover:border-purple-400/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-4xl">🔮</div>
+                      <div>
+                        <h4 className="font-bold text-white text-lg">Planos Específicos</h4>
+                        <p className="text-purple-300 text-sm">Consultas temáticas com tempo ilimitado</p>
+                      </div>
+                    </div>
+                    <div className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      ILIMITADO
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-purple-200">
+                    {planosEspecificos.slice(0, 4).map(plano => (
+                      <div key={plano.id}>• {plano.nome}</div>
+                    ))}
+                  </div>
+                </button>
+
+                {/* Consultas Gerais */}
+                <button
+                  onClick={() => setTipoConsulta('geral')}
+                  className={`w-full p-6 rounded-2xl border-2 transition-all duration-300 text-left ${
+                    tipoConsulta === 'geral'
+                      ? 'border-blue-400 bg-blue-900/30'
+                      : 'border-blue-500/30 bg-blue-900/10 hover:border-blue-400/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-4xl">⏱️</div>
+                      <div>
+                        <h4 className="font-bold text-white text-lg">Consulta Geral</h4>
+                        <p className="text-blue-300 text-sm">Qualquer tema, cobrança por minuto</p>
+                      </div>
+                    </div>
+                    <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      {formatarReal(VALOR_POR_MINUTO)}/min
+                    </div>
+                  </div>
+                  <div className="text-xs text-blue-200">
+                    Seus créditos: {formatarTempo(creditosDisponiveis)} • Mínimo: {TEMPO_MINIMO_CONSULTA}min
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ESCOLHER PROFISSIONAL */}
           {etapa === 'profissional' && (
             <div>
               <h3 className="text-xl font-bold text-white mb-6">
@@ -284,67 +389,93 @@ export default function ConsultaModal({
             </div>
           )}
 
-          {/* Etapa 2: Detalhes da Consulta */}
+          {/* DETALHES DA CONSULTA */}
           {etapa === 'detalhes' && (
             <div>
               <h3 className="text-xl font-bold text-white mb-6">
                 Detalhes da Consulta
               </h3>
 
-              {/* Tempo da Consulta */}
-              <div className="mb-6">
-                <label className="block text-purple-300 text-sm font-medium mb-3">
-                  Duração da Consulta:
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {temposConsulta.map((tempo) => {
-                    const suficiente = creditosDisponiveis >= tempo.valor;
-                    return (
+              {/* Seleção de Plano Específico */}
+              {tipoConsulta === 'especifico' && (
+                <div className="mb-6">
+                  <label className="block text-purple-300 text-sm font-medium mb-3">
+                    Escolha seu plano:
+                  </label>
+                  <div className="space-y-3">
+                    {planosEspecificos.map((plano) => (
                       <button
-                        key={tempo.valor}
-                        onClick={() => setTempoSelecionado(tempo.valor)}
-                        disabled={!suficiente}
-                        className={`p-3 rounded-xl border transition-all duration-300 relative ${
-                          tempoSelecionado === tempo.valor
+                        key={plano.id}
+                        onClick={() => setPlanoEspecificoId(plano.id)}
+                        className={`w-full p-4 rounded-xl border transition-all duration-300 text-left ${
+                          planoEspecificoId === plano.id
                             ? 'border-purple-400 bg-purple-900/30'
-                            : suficiente 
-                              ? 'border-purple-500/30 bg-purple-900/10 hover:border-purple-400/50'
-                              : 'border-red-500/30 bg-red-900/10 opacity-50 cursor-not-allowed'
+                            : 'border-purple-500/30 bg-purple-900/10 hover:border-purple-400/50'
                         }`}
                       >
-                        {tempo.popular && suficiente && (
-                          <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-                            Popular
-                          </span>
-                        )}
-                        {!suficiente && (
-                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                            Sem crédito
-                          </span>
-                        )}
-                        <div className={`font-medium ${suficiente ? 'text-white' : 'text-red-400'}`}>
-                          {tempo.label}
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-white">{plano.nome}</h4>
+                          <div className="text-right">
+                            <div className="text-yellow-400 font-bold">{plano.precoFormatado}</div>
+                            <div className="text-green-400 text-xs">ILIMITADO</div>
+                          </div>
                         </div>
+                        <p className="text-purple-300 text-sm">{plano.descricao}</p>
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-                
-                {/* Aviso de créditos insuficientes */}
-                {!validacao.suficiente && (
-                  <div className="mt-4 bg-yellow-900/20 rounded-xl p-4 border border-yellow-500/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-yellow-300 font-medium">⚠️ Créditos insuficientes</p>
-                        <p className="text-yellow-200 text-sm">{validacao.mensagem}</p>
-                      </div>
-                      <div className="flex gap-2">
+              )}
+
+              {/* Seleção de Tempo para Consulta Geral */}
+              {tipoConsulta === 'geral' && (
+                <div className="mb-6">
+                  <label className="block text-purple-300 text-sm font-medium mb-3">
+                    Duração da Consulta ({formatarReal(VALOR_POR_MINUTO)}/min):
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {temposConsultaGeral.map((tempo) => {
+                      const suficiente = creditosDisponiveis >= tempo.valor;
+                      return (
                         <button
-                          onClick={handleAjustarTempo}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                          key={tempo.valor}
+                          onClick={() => setTempoSelecionado(tempo.valor)}
+                          disabled={!suficiente}
+                          className={`p-4 rounded-xl border transition-all duration-300 relative ${
+                            tempoSelecionado === tempo.valor
+                              ? 'border-purple-400 bg-purple-900/30'
+                              : suficiente 
+                                ? 'border-purple-500/30 bg-purple-900/10 hover:border-purple-400/50'
+                                : 'border-red-500/30 bg-red-900/10 opacity-50 cursor-not-allowed'
+                          }`}
                         >
-                          Ajustar Tempo
+                          {tempo.popular && suficiente && (
+                            <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                              Popular
+                            </span>
+                          )}
+                          {!suficiente && (
+                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                              Sem crédito
+                            </span>
+                          )}
+                          <div className={`font-bold text-lg ${suficiente ? 'text-white' : 'text-red-400'}`}>
+                            {tempo.label}
+                          </div>
+                          <div className={`text-sm ${suficiente ? 'text-purple-300' : 'text-red-300'}`}>
+                            {formatarReal(tempo.valorReal)}
+                          </div>
                         </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {tipoConsulta === 'geral' && !validacao.valido && (
+                    <div className="mt-4 bg-yellow-900/20 rounded-xl p-4 border border-yellow-500/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-yellow-300 font-medium">⚠️ {validacao.mensagem}</p>
+                        </div>
                         <button
                           onClick={handleComprarCreditos}
                           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
@@ -353,9 +484,9 @@ export default function ConsultaModal({
                         </button>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Tema da Consulta */}
               <div className="mb-6">
@@ -396,7 +527,7 @@ export default function ConsultaModal({
             </div>
           )}
 
-          {/* Etapa 3: Confirmação */}
+          {/* CONFIRMAÇÃO */}
           {etapa === 'confirmacao' && (
             <div>
               <h3 className="text-xl font-bold text-white mb-6">
@@ -410,13 +541,38 @@ export default function ConsultaModal({
                   <div className="flex justify-between">
                     <span>Profissional:</span>
                     <span className="font-medium">
-                      {profissionaisWhatsApp[profissionalSelecionado as keyof typeof profissionaisWhatsApp]?.nome}
+                      {profissionais.find(p => p.id === profissionalSelecionado)?.nome}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Duração:</span>
-                    <span className="font-medium">{formatarTempo(tempoSelecionado)}</span>
+                    <span>Tipo:</span>
+                    <span className="font-medium">
+                      {tipoConsulta === 'especifico' ? planoSelecionado?.nome : 'Consulta Geral'}
+                    </span>
                   </div>
+                  {tipoConsulta === 'geral' ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Duração:</span>
+                        <span className="font-medium">{formatarTempo(tempoSelecionado)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Valor:</span>
+                        <span className="font-medium text-yellow-400">{formatarReal(valorConsulta)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Duração:</span>
+                        <span className="font-medium text-green-400">ILIMITADO</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Valor:</span>
+                        <span className="font-medium text-yellow-400">{planoSelecionado?.precoFormatado}</span>
+                      </div>
+                    </>
+                  )}
                   {temaSelecionado && (
                     <div className="flex justify-between">
                       <span>Tema:</span>
@@ -425,62 +581,49 @@ export default function ConsultaModal({
                       </span>
                     </div>
                   )}
-                  <div className="border-t border-purple-500/30 pt-3 mt-3">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Custo:</span>
-                      <span className="text-yellow-400">{formatarTempo(tempoSelecionado)}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* Validação de Créditos */}
+              {/* Validação final */}
               <div className={`p-4 rounded-xl mb-6 ${
-                validacao.suficiente 
+                (tipoConsulta === 'geral' && validacao.valido) || tipoConsulta === 'especifico'
                   ? 'bg-green-900/20 border border-green-500/30' 
                   : 'bg-red-900/20 border border-red-500/30'
               }`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={validacao.suficiente ? 'text-green-300' : 'text-red-300'}>
-                      Seus créditos: {formatarTempo(creditosDisponiveis)}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      {validacao.mensagem}
-                    </p>
+                    {tipoConsulta === 'especifico' ? (
+                      <p className="text-green-300">✅ Plano específico selecionado - Tempo ilimitado</p>
+                    ) : (
+                      <p className={validacao.valido ? 'text-green-300' : 'text-red-300'}>
+                        Seus créditos: {formatarTempo(creditosDisponiveis)} | {validacao.mensagem}
+                      </p>
+                    )}
                   </div>
-                  <div className={`text-2xl ${validacao.suficiente ? 'text-green-400' : 'text-red-400'}`}>
-                    {validacao.suficiente ? '✅' : '❌'}
+                  <div className={`text-2xl ${
+                    (tipoConsulta === 'geral' && validacao.valido) || tipoConsulta === 'especifico' 
+                      ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {(tipoConsulta === 'geral' && validacao.valido) || tipoConsulta === 'especifico' ? '✅' : '❌'}
                   </div>
                 </div>
-                
-                {!validacao.suficiente && (
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      onClick={() => setEtapa('detalhes')}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                    >
-                      Ajustar Consulta
-                    </button>
-                    <button
-                      onClick={handleComprarCreditos}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                    >
-                      Comprar Créditos
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )}
 
-          {/* Saldo de Créditos - Sempre visível exceto na tela sem créditos */}
-          {etapa !== 'sem-creditos' && (
+          {/* Saldo de Créditos */}
+          {etapa !== 'sem-creditos' && tipoConsulta === 'geral' && (
             <div className="bg-black/40 rounded-xl p-4 mb-6 border border-purple-500/20">
               <div className="flex items-center justify-between">
                 <span className="text-purple-300">Seus créditos:</span>
                 <span className="text-yellow-400 font-bold">
                   {formatarTempo(creditosDisponiveis)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-purple-300 text-sm">Valor por minuto:</span>
+                <span className="text-green-400 text-sm font-bold">
+                  {formatarReal(VALOR_POR_MINUTO)}
                 </span>
               </div>
             </div>
@@ -491,15 +634,23 @@ export default function ConsultaModal({
         <div className="p-6 border-t border-purple-500/30">
           <div className="flex gap-4">
             {etapa === 'sem-creditos' ? (
-              <button
-                onClick={onClose}
-                className="w-full py-3 px-6 bg-gray-600/50 hover:bg-gray-600/70 text-white font-medium rounded-xl transition-all duration-300"
-              >
-                Fechar
-              </button>
+              <>
+                <button
+                  onClick={handleVoltar}
+                  className="flex-1 py-3 px-6 bg-gray-600/50 hover:bg-gray-600/70 text-white font-medium rounded-xl transition-all duration-300"
+                >
+                  ← Voltar
+                </button>
+                <button
+                  onClick={handleComprarCreditos}
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-xl transition-all duration-300"
+                >
+                  💳 Comprar Créditos
+                </button>
+              </>
             ) : (
               <>
-                {etapa !== 'profissional' && (
+                {etapa !== 'tipo' && (
                   <button
                     onClick={handleVoltar}
                     className="flex-1 py-3 px-6 bg-gray-600/50 hover:bg-gray-600/70 text-white font-medium rounded-xl transition-all duration-300"
@@ -511,7 +662,11 @@ export default function ConsultaModal({
                 {etapa !== 'confirmacao' ? (
                   <button
                     onClick={handleContinuar}
-                    disabled={etapa === 'profissional' && !profissionalSelecionado}
+                    disabled={
+                      (etapa === 'tipo' && !tipoConsulta) ||
+                      (etapa === 'profissional' && !profissionalSelecionado) ||
+                      (etapa === 'detalhes' && tipoConsulta === 'especifico' && !planoEspecificoId)
+                    }
                     className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-300"
                   >
                     Continuar →
@@ -519,7 +674,11 @@ export default function ConsultaModal({
                 ) : (
                   <button
                     onClick={handleSolicitarConsulta}
-                    disabled={!validacao.suficiente || processando}
+                    disabled={
+                      processando || 
+                      (tipoConsulta === 'geral' && !validacao.valido) ||
+                      (tipoConsulta === 'especifico' && !planoEspecificoId)
+                    }
                     className="flex-1 py-4 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-300"
                   >
                     {processando ? (

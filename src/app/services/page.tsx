@@ -1,8 +1,46 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getPlanosEspecificos, getPlanosGerais } from '@/data/pacotes-creditos';
 
 export default function ServicesPage() {
+  // Partículas flutuantes (mesmo padrão das outras páginas)
+  useEffect(() => {
+    const createParticle = () => {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.cssText = `
+        position: fixed;
+        width: 3px;
+        height: 3px;
+        background: rgba(147, 112, 219, 0.6);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 1;
+        left: ${Math.random() * 100}vw;
+        animation: float ${8 + Math.random() * 10}s linear infinite;
+      `;
+      document.body.appendChild(particle);
+      
+      setTimeout(() => particle.remove(), 18000);
+    };
+
+    const interval = setInterval(createParticle, 300);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Dados atualizados dos profissionais (4 reais + 1 fake)
+  const profissionaisDestaque = [
+    { nome: 'Cigana Aurora', especialidade: 'Tarot Cigano', icone: '💕', destaque: 'Especialista em Amor' },
+    { nome: 'Cigana Mary', especialidade: 'Baralho Cigano', icone: '🚀', destaque: 'Expert em Carreira' },
+    { nome: 'Cigana Jade', especialidade: 'Cristalomancia', icone: '🌙', destaque: 'Mestra Espiritual' },
+    { nome: 'Cigana Mel', especialidade: 'Numerologia', icone: '✨', destaque: 'Vidente Premium' },
+    { nome: 'Cigana Esperança', especialidade: 'Runas & Tarô', icone: '🔮', destaque: 'Consultora Top' }
+  ];
+
   const modalidadesConsulta = [
     {
       id: 'whatsapp',
@@ -17,27 +55,27 @@ export default function ServicesPage() {
       ]
     },
     {
-      id: 'tempo-real',
-      titulo: 'Consulta em Tempo Real',
-      descricao: 'Orientação imediata quando você mais precisa',
-      icone: '⚡',
+      id: 'especifica',
+      titulo: 'Planos Específicos',
+      descricao: 'Consultas temáticas com tempo ilimitado',
+      icone: '🔮',
       detalhes: [
-        'Atendimento instantâneo',
-        'Especialistas sempre online',
-        'Emergências espirituais',
-        'Clareza na hora certa'
+        'Tempo ilimitado',
+        'Análise especializada',
+        'Relatório detalhado',
+        'Preço fixo por tema'
       ]
     },
     {
-      id: 'personalizada',
-      titulo: 'Consulta Personalizada',
-      descricao: 'Análise completa e detalhada da sua situação',
-      icone: '🔮',
+      id: 'geral',
+      titulo: 'Consulta Geral',
+      descricao: 'Flexibilidade total por minutagem',
+      icone: '⏱️',
       detalhes: [
-        'Análise aprofundada',
-        'Relatório personalizado',
-        'Múltiplas áreas da vida',
-        'Plano de ação espiritual'
+        'Qualquer tema',
+        'Pague só o que usar',
+        'Tempo flexível',
+        'R$ 2,60 por minuto'
       ]
     }
   ];
@@ -45,8 +83,8 @@ export default function ServicesPage() {
   const processoSteps = [
     {
       numero: '1',
-      titulo: 'Escolha seus Créditos',
-      descricao: 'Selecione o pacote ideal para suas necessidades',
+      titulo: 'Escolha seu Plano',
+      descricao: 'Selecione entre planos específicos ou créditos gerais',
       icone: '💰'
     },
     {
@@ -63,159 +101,286 @@ export default function ServicesPage() {
     }
   ];
 
-  // Dados temporários dos pacotes (depois movemos para Stripe)
-  const pacotesCreditos = [
-  {
-    id: 'basico',
-    nome: 'Básico',
-    creditos: 30,
-    preco: 50,
-    precoFormatado: 'R$ 50,00',
-    popular: false,
-    beneficios: [
-      '30 minutos de consulta',
-      'Atendimento via WhatsApp',
-      'Suporte prioritário',
-      'Válido por 90 dias'
-    ]
-  },
-  {
-    id: 'popular',
-    nome: 'Popular',
-    creditos: 60,
-    preco: 90,
-    precoFormatado: 'R$ 90,00',
-    popular: true,
-    beneficios: [
-      '60 minutos de consulta',
-      'Atendimento via WhatsApp',
-      '10% de desconto',
-      'Relatório por email',
-      'Válido por 120 dias'
-    ]
-  },
-  {
-    id: 'premium',
-    nome: 'Premium',
-    creditos: 120,
-    preco: 160,
-    precoFormatado: 'R$ 160,00',
-    popular: false,
-    beneficios: [
-      '120 minutos de consulta',
-      'Atendimento prioritário',
-      '20% de desconto',
-      'Relatório detalhado',
-      'Consultoria personalizada',
-      'Válido por 180 dias'
-    ]
-  }
-];
+  // Carregar planos atualizados
+  const planosEspecificos = getPlanosEspecificos();
+  const planosGerais = getPlanosGerais();
 
   return (
     <>
-      {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-violet-900 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-purple-900/30 to-transparent"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(138,43,226,0.3),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(147,112,219,0.4),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(186,85,211,0.4),transparent_50%)]"></div>
+      {/* CSS Global (mesmo padrão das outras páginas) */}
+      <style jsx global>{`
+        @keyframes float {
+          0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.8;
+          }
+          90% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(-100vh) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes cardFloat {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+
+        .card-hover {
+          transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+          animation: cardFloat 3s ease-in-out infinite;
+        }
+        
+        .gradient-text {
+          background: linear-gradient(45deg, #8A2BE2, #9370DB, #6A5ACD, #483D8B);
+          background-size: 300% 300%;
+          animation: shimmer 8s ease-in-out infinite;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        @media (max-width: 768px) {
+          .mobile-optimized {
+            padding: 1rem;
+          }
+          
+          .mobile-text {
+            font-size: 1.5rem;
+          }
+          
+          .mobile-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+        }
+      `}</style>
+
+      {/* Background Refinado */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900/40 to-slate-900 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-purple-900/20 to-transparent"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(147,112,219,0.15),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(106,90,205,0.1),transparent_50%)]"></div>
       </div>
 
-      <div className="relative container mx-auto px-4 py-12 min-h-screen">
-        {/* Hero Section */}
-        <div className="text-center mb-20">
-          <div className="mb-8">
-            <span className="text-7xl block mb-6">🌟</span>
+      <div className="relative container mx-auto px-4 py-6 md:py-12 min-h-screen mobile-optimized">
+        
+        {/* Hero Section Refinada */}
+        <div className="text-center mb-12 md:mb-20 relative">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-64 h-64 md:w-96 md:h-96 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-full blur-2xl animate-pulse"></div>
           </div>
-          <h1 className="text-6xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 bg-clip-text text-transparent">
-            Nossos Serviços
-          </h1>
-          <p className="text-2xl text-purple-200 max-w-4xl mx-auto leading-relaxed">
-            Conecte-se com a sabedoria ancestral através de consultas personalizadas com nossos especialistas em tarô
-          </p>
+          
+          <div className="relative z-10">
+            <div className="mb-6 transform hover:scale-105 transition-transform duration-500">
+              <span className="text-6xl md:text-8xl block mb-4 animate-bounce">🌟</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-6 gradient-text mobile-text">
+              Nossos Serviços
+            </h1>
+            
+            <p className="text-lg md:text-xl text-purple-200/90 mb-6 md:mb-8 font-light max-w-3xl mx-auto leading-relaxed">
+              Conecte-se com a sabedoria ancestral através de consultas personalizadas
+            </p>
+            
+            <div className="flex justify-center space-x-4 md:space-x-8 text-purple-300">
+              {['✨', '🌙', '⭐', '🔯'].map((symbol, i) => (
+                <span key={i} className="text-2xl md:text-3xl animate-pulse" style={{animationDelay: `${i * 0.5}s`}}>
+                  {symbol}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Modalidades de Consulta */}
-        <div className="max-w-7xl mx-auto mb-20">
-          <h2 className="text-4xl font-bold text-center text-white mb-12">
-            Como Atendemos Você
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {modalidadesConsulta.map((modalidade) => (
-              <div
-                key={modalidade.id}
-                className="bg-black/30 backdrop-blur-xl rounded-3xl p-8 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-2xl"
-              >
-                <div className="text-center mb-6">
-                  <div className="text-6xl mb-4">{modalidade.icone}</div>
-                  <h3 className="text-2xl font-bold text-white mb-3">{modalidade.titulo}</h3>
-                  <p className="text-purple-200 text-lg">{modalidade.descricao}</p>
-                </div>
-
-                <div className="space-y-3">
-                  {modalidade.detalhes.map((detalhe, index) => (
-                    <div key={index} className="flex items-center text-purple-300">
-                      <span className="text-green-400 mr-3 text-lg">✓</span>
-                      <span>{detalhe}</span>
+        {/* Tipos de Planos Atualizados */}
+        <div className="max-w-6xl mx-auto mb-12 md:mb-20">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl md:rounded-3xl p-6 md:p-8 border border-purple-500/30 shadow-xl">
+            <h2 className="text-2xl md:text-4xl font-bold text-center gradient-text mb-8 md:mb-12">
+              Tipos de Consulta
+            </h2>
+            
+            {/* Planos Específicos */}
+            <div className="mb-12">
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center">
+                <span className="text-3xl mr-3">🔮</span>
+                Planos Específicos (Tempo Ilimitado)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {planosEspecificos.map((plano, index) => (
+                  <div
+                    key={plano.id}
+                    className="card-hover bg-slate-700/40 backdrop-blur-md rounded-xl md:rounded-2xl p-4 md:p-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 transform hover:scale-105"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-bold text-white text-base md:text-lg">{plano.nome}</h4>
+                      <div className="text-right">
+                        <div className="text-yellow-400 font-bold text-lg">{plano.precoFormatado}</div>
+                        <div className="text-green-400 text-xs font-medium">ILIMITADO</div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-purple-200/80 text-sm leading-relaxed">{plano.descricao}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Planos Gerais */}
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center">
+                <span className="text-3xl mr-3">⏱️</span>
+                Consultas Gerais (Por Minutagem)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {planosGerais.map((plano, index) => (
+                  <div
+                    key={plano.id}
+                    className={`card-hover bg-slate-700/40 backdrop-blur-md rounded-xl md:rounded-2xl p-4 md:p-6 border transition-all duration-300 transform hover:scale-105 ${
+                      plano.popular 
+                        ? 'border-yellow-400/50 bg-gradient-to-br from-yellow-500/10 to-amber-500/10' 
+                        : 'border-blue-500/30 hover:border-blue-400/50'
+                    }`}
+                  >
+                    {plano.popular && (
+                      <div className="text-center mb-3">
+                        <span className="bg-yellow-500 text-black text-xs px-3 py-1 rounded-full font-bold">
+                          MAIS POPULAR
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-bold text-white text-base md:text-lg">{plano.nome}</h4>
+                      <div className="text-right">
+                        <div className="text-yellow-400 font-bold text-lg">{plano.precoFormatado}</div>
+                        <div className="text-blue-400 text-xs font-medium">{plano.creditos} minutos</div>
+                      </div>
+                    </div>
+                    <p className="text-purple-200/80 text-sm leading-relaxed">{plano.descricao}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modalidades de Atendimento */}
+        <div className="max-w-6xl mx-auto mb-12 md:mb-20">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl md:rounded-3xl p-6 md:p-8 border border-purple-500/30 shadow-xl">
+            <h2 className="text-2xl md:text-4xl font-bold text-center gradient-text mb-8 md:mb-12">
+              Como Atendemos Você
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {modalidadesConsulta.map((modalidade) => (
+                <div
+                  key={modalidade.id}
+                  className="card-hover bg-slate-700/40 backdrop-blur-md rounded-xl md:rounded-2xl p-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 transform hover:scale-105"
+                >
+                  <div className="text-center mb-6">
+                    <div className="text-5xl md:text-6xl mb-4">{modalidade.icone}</div>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-3">{modalidade.titulo}</h3>
+                    <p className="text-purple-200/80 text-base md:text-lg">{modalidade.descricao}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {modalidade.detalhes.map((detalhe, index) => (
+                      <div key={index} className="flex items-center text-purple-300">
+                        <span className="text-green-400 mr-3 text-lg">✓</span>
+                        <span className="text-sm md:text-base">{detalhe}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Como Funciona */}
-        <div className="max-w-6xl mx-auto mb-20">
-          <h2 className="text-4xl font-bold text-center text-white mb-12">
-            Como Funciona
-          </h2>
+        <div className="max-w-6xl mx-auto mb-12 md:mb-20">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl md:rounded-3xl p-6 md:p-8 border border-purple-500/30 shadow-xl">
+            <h2 className="text-2xl md:text-4xl font-bold text-center gradient-text mb-8 md:mb-12">
+              Como Funciona
+            </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {processoSteps.map((step, index) => (
-              <div key={step.numero} className="text-center relative">
-                {/* Linha conectora */}
-                {index < processoSteps.length - 1 && (
-                  <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-purple-500 to-transparent transform translate-x-8 z-0"></div>
-                )}
-                
-                <div className="relative z-10 bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold text-white mx-auto mb-6">
-                    {step.numero}
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              {processoSteps.map((step, index) => (
+                <div key={step.numero} className="text-center relative">
+                  {/* Linha conectora */}
+                  {index < processoSteps.length - 1 && (
+                    <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-purple-500 to-transparent transform translate-x-8 z-0"></div>
+                  )}
                   
-                  <div className="text-5xl mb-4">{step.icone}</div>
-                  <h3 className="text-xl font-bold text-white mb-4">{step.titulo}</h3>
-                  <p className="text-purple-200">{step.descricao}</p>
+                  <div className="relative z-10 card-hover bg-slate-700/40 backdrop-blur-md rounded-xl md:rounded-2xl p-6 md:p-8 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-xl md:text-2xl font-bold text-white mx-auto mb-4 md:mb-6">
+                      {step.numero}
+                    </div>
+                    
+                    <div className="text-4xl md:text-5xl mb-4">{step.icone}</div>
+                    <h3 className="text-lg md:text-xl font-bold text-white mb-4">{step.titulo}</h3>
+                    <p className="text-purple-200/80 text-sm md:text-base">{step.descricao}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Preview dos Profissionais */}
-        <div className="max-w-6xl mx-auto mb-20">
-          <div className="bg-black/30 backdrop-blur-xl rounded-3xl p-12 border border-purple-500/30">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-white mb-6">Nossos Especialistas</h2>
-              <p className="text-xl text-purple-200">
-                 profissionais experientes prontos para orientar sua jornada espiritual
+        {/* TOP 5 Profissionais Destaque */}
+        <div className="max-w-6xl mx-auto mb-12 md:mb-20">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl md:rounded-3xl p-6 md:p-8 border border-purple-500/30 shadow-xl">
+            <div className="text-center mb-8 md:mb-12">
+              <div className="flex justify-center items-center mb-4">
+                <span className="text-4xl md:text-5xl mr-3">🏆</span>
+                <h2 className="text-2xl md:text-4xl font-bold gradient-text">TOP 5 do Mês</h2>
+                <span className="text-4xl md:text-5xl ml-3">🏆</span>
+              </div>
+              <p className="text-lg md:text-xl text-purple-200/90">
+                Nossos tarólogos mais procurados e bem avaliados
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-              {[
-                { nome: 'Marina Celestial', especialidade: 'Amor', icone: '💕' },
-                { nome: 'Gabriel Místico', especialidade: 'Carreira', icone: '🚀' },
-                { nome: 'Luna Esotérica', especialidade: 'Espiritualidade', icone: '🌙' },
-                { nome: 'Ricardo Vidente', especialidade: 'Geral', icone: '✨' }
-              ].map((prof, index) => (
-                <div key={index} className="text-center p-6 bg-purple-900/20 rounded-2xl border border-purple-500/20">
-                  <div className="text-4xl mb-3">{prof.icone}</div>
-                  <h4 className="font-bold text-white mb-2">{prof.nome}</h4>
-                  <p className="text-purple-300 text-sm">{prof.especialidade}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8 md:mb-12">
+              {profissionaisDestaque.map((prof, index) => (
+                <div key={index} className="text-center relative">
+                  <div className="card-hover bg-slate-700/40 backdrop-blur-md rounded-xl md:rounded-2xl p-4 md:p-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 transform hover:scale-105">
+                    {/* Badge de posição */}
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-black font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    
+                    <div className="text-3xl md:text-4xl mb-3">{prof.icone}</div>
+                    <h4 className="font-bold text-white mb-2 text-sm md:text-base">{prof.nome}</h4>
+                    <p className="text-purple-300 text-xs md:text-sm mb-2">{prof.especialidade}</p>
+                    <div className="text-yellow-400 text-xs font-medium">{prof.destaque}</div>
+                    
+                    {/* Estrelas de avaliação */}
+                    <div className="flex justify-center mt-2 text-yellow-400">
+                      {'⭐'.repeat(5)}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -223,72 +388,45 @@ export default function ServicesPage() {
             <div className="text-center">
               <Link
                 href="/profissionais"
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="card-hover inline-flex items-center px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
-                👥 Ver Todos os Profissionais
+                <span className="text-xl mr-2">👥</span>
+                Ver Todos os Profissionais
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Pacotes e Preços */}
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-6">Pacotes de Créditos</h2>
-            <p className="text-xl text-purple-200">
-              Escolha o pacote ideal para suas consultas
+        {/* Call-to-Action Final */}
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl md:rounded-3xl p-8 md:p-12 border border-purple-500/30 shadow-xl">
+            <h2 className="text-2xl md:text-4xl font-bold gradient-text mb-4 md:mb-6">
+              Pronto para Descobrir seu Destino?
+            </h2>
+            <p className="text-base md:text-xl text-purple-200/90 mb-6 md:mb-8 leading-relaxed">
+              Nossos especialistas estão aguardando para oferecer orientação personalizada. 
+              Escolha entre planos específicos ou créditos gerais.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {pacotesCreditos.map((pacote) => (
-              <div
-                key={pacote.id}
-                className={`bg-black/30 backdrop-blur-xl rounded-3xl p-8 border-2 transition-all duration-300 hover:transform hover:scale-105 ${
-                  pacote.popular 
-                    ? 'border-yellow-400/50 shadow-yellow-400/20 shadow-2xl' 
-                    : 'border-purple-500/30'
-                }`}
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+              <Link
+                href="/creditos"
+                className="card-hover w-full sm:w-auto inline-flex items-center justify-center px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-lg md:text-xl rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
               >
-                {pacote.popular && (
-                  <div className="text-center mb-6">
-                    <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-4 py-2 rounded-full text-sm font-bold">
-                      ⭐ MAIS POPULAR
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-white mb-3">{pacote.nome}</h3>
-                  <div className="text-4xl font-bold text-yellow-400 mb-2">
-                    {pacote.precoFormatado}
-                  </div>
-                  <p className="text-purple-300">
-                    {pacote.creditos} minutos de consulta
-                  </p>
-                </div>
-
-                <div className="space-y-3 mb-8">
-                  {pacote.beneficios.map((beneficio, index) => (
-                    <div key={index} className="flex items-center text-purple-200">
-                      <span className="text-green-400 mr-3">✓</span>
-                      <span className="text-sm">{beneficio}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA para Créditos */}
-          <div className="text-center">
-            <Link
-              href="/creditos"
-              className="inline-flex items-center px-12 py-6 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-xl rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
-            >
-              💰 Comprar Créditos Agora
-            </Link>
-            <p className="text-purple-300 mt-4 text-sm">
+                <span className="mr-2">💰</span>
+                Ver Todos os Planos
+              </Link>
+              
+              <Link
+                href="/dashboard"
+                className="card-hover w-full sm:w-auto inline-flex items-center justify-center px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-lg md:text-xl rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg border border-purple-400/30"
+              >
+                <span className="mr-2">🔮</span>
+                Solicitar Consulta
+              </Link>
+            </div>
+            
+            <p className="text-purple-300 text-sm md:text-base">
               Pagamento seguro via cartão ou PIX
             </p>
           </div>
