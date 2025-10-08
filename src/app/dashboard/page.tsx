@@ -106,7 +106,7 @@ export default function DashboardPage() {
           {/* Main Content */}
           <div className="flex-1 lg:ml-64 min-h-screen">
             {/* Header Mobile Harmonizado */}
-            <div className="lg:hidden bg-slate-800/60 backdrop-blur-lg border-b border-purple-500/30 p-4">
+            <div className="lg:hidden bg-slate-800/70 border-b border-purple-500/30 p-4">
               <div className="flex items-center justify-between">
                 <h1 className="text-xl font-bold text-white flex items-center">
                   <span className="text-2xl mr-2">🌌</span>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
         {/* Overlay para mobile harmonizado */}
         {sidebarOpen && (
           <div
-            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-lg z-40"
+            className="lg:hidden fixed inset-0 bg-black/20 z-40"
             onClick={() => setSidebarOpen(false)}
           />
         )}
