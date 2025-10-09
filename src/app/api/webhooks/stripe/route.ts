@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';//eslint-disable-next-line
+import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { doc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-//eslint-disable-next-line
+
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
@@ -23,17 +23,17 @@ export async function POST(request: NextRequest) {
     let event;
 
     // Comentado para desenvolvimento - pular validação de assinatura
-    // try {
-    //   event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    // } catch (err: any) {
-    //   console.error('Erro na verificação do webhook:', err.message);
-    //   return NextResponse.json(
-    //     { error: `Webhook signature verification failed: ${err.message}` },
-    //     { status: 400 }
-    //   );
-    // }
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);//eslint-disable-next-line
+    } catch (err: any) {
+      console.error('Erro na verificação do webhook:', err.message);
+      return NextResponse.json(
+        { error: `Webhook signature verification failed: ${err.message}` },
+         { status: 400 }
+       );
+     }
 
-    //eslint-disable-next-line
+    
     event = JSON.parse(body);
 
     // Handle the event

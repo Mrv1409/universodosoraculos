@@ -96,7 +96,7 @@ function gerarLinkWhatsapp(
   tempoSolicitado?: number,
   planNome?: string
 ): string {
-  const numeroWhatsapp = '5571991410847';
+  const numeroWhatsapp = '5574988173413';
   const profissionalNome = profissionaisData[profissionalId as keyof typeof profissionaisData]?.nome || 'Profissional';
   
   let mensagem = `🔮 *NOVA CONSULTA - UNIVERSO DOS ORÁCULOS*\n\n` +
