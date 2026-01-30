@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { sairUsuario } from '@/hooks/auth';
 import { formatarTempo } from '@/lib/utils';
+import Image from 'next/image'; // Import adicionado
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -100,12 +101,20 @@ export default function Header() {
         
         <div className="container mx-auto px-4 py-3 relative z-10">
           <div className="flex justify-between items-center">
-            {/* Logo com efeito idêntico à página principal */}
+            {/* Logo com efeito idêntico à página principal - AGORA COM SUA LOGO */}
             <Link 
               href="/" 
-              className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-200 to-blue-200 bg-clip-text text-transparent hover:scale-105 transition-transform duration-300 header-hover"
+              className="flex items-center text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-200 to-blue-200 bg-clip-text text-transparent hover:scale-105 transition-transform duration-300 header-hover gap-2"
             >
-              <span className="text-2xl">🔮</span> Universo dos Oráculos
+              {/* Substituído o emoji 🔮 pela sua logo */}
+              <Image 
+                src="/images/logonova.jpeg" 
+                alt="Universo dos Oráculos Logo" 
+                width={32} 
+                height={32}
+                className="rounded-full"
+              />
+              Universo dos Oráculos
             </Link>
 
             {/* Menu Desktop - Estilo consistente */}
